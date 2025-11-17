@@ -1,30 +1,52 @@
-# MCP‑Stock‑Analyzer
+# MCP-Stock-Analyzer
 
-A multi‑agent stock analysis system built on the **Model Context Protocol (MCP)**. It combines OpenAI’s OSS‑20B LLM, LangGraph workflows, and yfinance‑powered market data to deliver fast, auditable technical and fundamental insights via a FastAPI backend and Streamlit UI.
+A lightweight, fully local **MCP-style stock analysis system** powered by:
 
-## Overview
-This repository implements an orchestrator‑centric MCP demo for stock analysis:
+- **Groq LLMs** (gpt-oss-120b via `GROQ_API_KEY`)
+- **Local MCP orchestrator** (no LangGraph)
+- **Tool-based pipeline** (quotes, history, fundamentals)
+- **Step-by-step audit trace** stored in SQLite
+- **Interactive Streamlit UI** for inspection and analysis
 
-- **Data sources:** yfinance tools (quotes, history, fundamentals)  
-- **MCP components:** tool registry + SQLite audit persistence  
-- **API endpoints:** JSON‑RPC `/mcp/rpc` and orchestrator `/mcp/analyze`  
-- **Workflow support:** LangGraph integration  
-- **LLM backend:** OpenAI OSS‑20B (configured with `GROQ_API_KEY`)  
-- **UI:** Streamlit interface
+This project is designed as a clean and production-friendly MCP demonstration that can be deployed **entirely on Streamlit Cloud** without any external backend or Render server.
 
-## Features
-- Real‑time market data retrieval  
-- Technical and fundamental analysis pipelines  
-- Auditable interactions stored in SQLite  
-- Scalable FastAPI backend  
-- Interactive Streamlit dashboard for users
+---
 
-## Getting Started
-1. Clone the repository.  
-2. Install dependencies: `pip install -r requirements.txt`.  
-3. Set `GROQ_API_KEY` in your environment.  
-4. Run the FastAPI server: `uvicorn app.main:app --reload`.  
-5. Launch the Streamlit UI: `streamlit run ui/app.py`.
+##  Overview
 
-## Contribution
-Feel free to open issues or submit pull requests. All contributions are welcome!  
+This repository implements a **MCP orchestrator** for stock analysis.  
+Each run performs:
+
+1. **Micro-tools**  
+   - `quote_tool` – latest price snapshot  
+   - `history_tool` – multi-period OHLC history  
+   - `fundamentals_tool` – valuation metrics  
+
+2. **LLM synthesis**  
+   All collected data is passed to **Groq OSS-120 (gpt-oss-120b)** using the  
+   `GROQ_API_KEY` you provide.
+
+3. **Audit + trace logging**  
+   Each MCP step (inputs, outputs, timestamps, duration) is logged in a local SQLite DB (`data/audit.db`).
+
+4. **Streamlit UI**  
+   View:
+   - LLM analysis  
+   - Step-by-step tool execution  
+   - MCP trace  
+   - Past runs (scrollable audit history)  
+   - Automatic conclusion summary  
+
+---
+
+##  Architecture
+
+###  MCP Components  
+- **Tool Registry:** Defined in `tools_registry.py`  
+- **Orchestrator:** Executes tools sequentially → builds context → calls LLM  
+- **Audit Layer:** `audit_model.py` for SQLite-based step logging  
+- **LLM Client:** `llm_client.py` (Groq-only)  
+- **UI Layer:** `streamlit_app.py`  
+
+###  LLM Backend  
+Groq **OSS-120** model:  
