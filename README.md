@@ -9,8 +9,6 @@ A fully local **Custom MCP (Model Context Protocol)** stock analysis workflow po
 - **Full provenance logging (SQLite)**
 - **Interactive Streamlit UI**
 
-Everything runs *directly inside Streamlit Cloud* — no external backend, no LangGraph, no Render deployment.
-
 ---
 
 #  Live Demo
