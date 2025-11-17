@@ -4,7 +4,7 @@ from audit_model import list_runs, get_trace
 import os
 
 st.set_page_config(page_title="MCP Stock Analyzer — Groq", layout="wide")
-st.title("📈 MCP Stock Analyzer — Using Groq gpt-oss-120b")
+st.title("📈 MCP Stock Analyzer")
 
 # --- Diagnostic: detect GROQ key sources ---
 def detect_groq_source():
