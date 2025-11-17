@@ -3,7 +3,7 @@
 
 A fully local **Custom MCP (Model Context Protocol)** stock analysis workflow powered by:
 
-- **Groq OSS-120B** (via `GROQ_API_KEY`)
+- **OpenAI OSS-120B** (via `GROQ_API_KEY`)
 - **Local MCP-style orchestrator**
 - **Tool-based execution pipeline**
 - **Full provenance logging (SQLite)**
