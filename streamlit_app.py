@@ -52,9 +52,9 @@ def detect_groq_source():
 diag = detect_groq_source()
 col_diag1, col_diag2, col_diag3 = st.columns([1,1,4])
 with col_diag1:
-    st.write("🔐 Key in env:", diag["env"])
+    st.write(" Key in env:", diag["env"])
 with col_diag2:
-    st.write("🔑 Key in st.secrets:", diag["secrets"])
+    st.write(" Key in st.secrets:", diag["secrets"])
 with col_diag3:
     st.write("Masked (secrets):", diag["masked"] or "—")
     if not (diag["env"] or diag["secrets"]):
@@ -62,9 +62,7 @@ with col_diag3:
 
 st.markdown("---")
 
-# -----------------------
-# Left: Main controls + outputs
-# -----------------------
+
 left_col, right_col = st.columns([2, 1])
 
 with left_col:
@@ -81,7 +79,7 @@ with left_col:
     period_label = st.selectbox("History window", list(period_map.keys()), index=0)
     period = period_map[period_label]
 
-    run_button = st.button("▶️ Run MCP Pipeline")
+    run_button = st.button(" Run MCP Pipeline")
 
     if run_button:
         if not ticker or not ticker.strip():
@@ -148,17 +146,13 @@ with left_col:
                 conclusion_text = "No LLM conclusion available (mock response or empty output)."
             st.info(conclusion_text)
 
-# -----------------------
-# Right: Minimized Past Runs / Audit — scrollable panel (fixed height)
-# -----------------------
+
 with right_col:
     st.header("Past Runs (Audit)")
     st.markdown("**Stored runs (ephemeral)** — click an item to expand details.")
     runs = list_runs(limit=50)
 
-    # Build an HTML block with a vertical scroll for compactness
-    # We will render a simple list of runs and allow expand via client-side buttons is complex,
-    # so we'll provide a compact JSON viewer inside a scrollable box.
+
     runs_json = []
     for r in runs:
         runs_json.append({
