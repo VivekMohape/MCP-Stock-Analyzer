@@ -1,32 +1,79 @@
-import os, json, hashlib, time
-from sqlalchemy import create_engine, Column, Integer, String, Float, Text
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+import sqlite3
+import json
+from pathlib import Path
+from typing import List, Dict, Any
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./mcp_audit.db")
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False} if "sqlite" in DATABASE_URL else {})
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
-Base = declarative_base()
+DB_PATH = Path("data/audit.db")
+DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-class AuditRecord(Base):
-    __tablename__ = "audit_records"
-    id = Column(Integer, primary_key=True, index=True)
-    req_id = Column(String, index=True)
-    action = Column(String)
-    payload = Column(Text)
-    audit_hash = Column(String, unique=True, index=True)
-    ts = Column(Float)
+def _get_conn():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 def init_db():
-    Base.metadata.create_all(bind=engine)
+    conn = _get_conn()
+    cur = conn.cursor()
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS audit_steps (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        run_id TEXT NOT NULL,
+        step_index INTEGER NOT NULL,
+        name TEXT,
+        tool TEXT,
+        input_json TEXT,
+        output_json TEXT,
+        duration REAL,
+        created_at TEXT
+    )
+    """)
+    conn.commit()
+    conn.close()
 
-def persist_audit(req_id: str, action: str, payload_obj: dict):
-    payload = json.dumps(payload_obj, sort_keys=True)
-    h = hashlib.sha256(payload.encode()).hexdigest()
-    rec = AuditRecord(req_id=req_id, action=action, payload=payload, audit_hash=h, ts=time.time())
-    db = SessionLocal()
-    db.add(rec)
-    db.commit()
-    db.refresh(rec)
-    db.close()
-    return rec.audit_hash
+def save_audit_step(run_id, step_index, name, tool, input_obj, output_obj, duration, created_at):
+    conn = _get_conn()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO audit_steps (run_id, step_index, name, tool, input_json, output_json, duration, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        run_id,
+        step_index,
+        name,
+        tool,
+        json.dumps(input_obj),
+        json.dumps(output_obj),
+        duration,
+        created_at
+    ))
+    conn.commit()
+    conn.close()
+
+def get_trace(run_id):
+    conn = _get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM audit_steps WHERE run_id = ? ORDER BY step_index", (run_id,))
+    rows = cur.fetchall()
+    conn.close()
+    output = []
+    for r in rows:
+        output.append({
+            "step_index": r["step_index"],
+            "name": r["name"],
+            "tool": r["tool"],
+            "input": json.loads(r["input_json"]),
+            "output": json.loads(r["output_json"]),
+            "duration": r["duration"],
+            "created_at": r["created_at"]
+        })
+    return output
+
+def list_runs(limit=20):
+    conn = _get_conn()
+    cur = conn.cursor()
+    cur.execute("SELECT run_id, MAX(created_at) as last_at, MAX(step_index) as steps FROM audit_steps GROUP BY run_id ORDER BY last_at DESC LIMIT ?", (limit,))
+    rows = cur.fetchall()
+    conn.close()
+    return [{"run_id": r["run_id"], "last_at": r["last_at"], "steps": r["steps"]} for r in rows]
+
+init_db()
