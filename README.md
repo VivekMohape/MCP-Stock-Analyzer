@@ -29,7 +29,7 @@ This repository is a compact, production-ready demonstration of a **Custom MCP S
 - A structured audit trace is logged  
 - A UI visualizes the entire MCP pipeline  
 
-No external services — everything happens inside the Streamlit app.
+
 
 ---
 
@@ -99,13 +99,6 @@ This project uses MCP concepts:
 | **Inspector UI** | Streamlit dashboard showing complete trace |
 | **Replayability** | `list_runs()` and `get_trace()` |
 
-This is an **MCP system**, but implemented **locally**, using:
-
-- No LangGraph  
-- No OpenAI MCP server  
-- No JSON-RPC MCP runtime  
-
-Just the **protocol pattern**, clean and customizable.
 
 ---
 
