@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+requests
+python-dotenv
+streamlit
+yfinance
+pandas
+jsonschema
+pytest
+sseclient-py
+sqlalchemy
+cryptography
+uvloop
+httptools
