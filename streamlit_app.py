@@ -1,64 +1,60 @@
+# streamlit_app.py
 import streamlit as st
-import requests, os, time, json
+from local_orchestrator import run_analysis
+from audit_model import get_trace, list_runs
+import json
+from utils import make_run_id
 
-API_BASE = os.getenv("API_BASE", "http://127.0.0.1:8000")
-API_KEY = os.getenv("MCP_API_KEY", "dev-local-key")
-st.set_page_config(page_title="MCP Stock Analyzer", layout="wide")
-st.title("MCP Stock Analyzer (Groq OSS-20B)")
+st.set_page_config(page_title="MCP Stock Analyzer (Local)", layout="wide")
+st.title("MCP Stock Analyzer — Local Orchestrator (No LangGraph, No Render)")
 
-st.markdown("Edit the system prompt. This prompt is injected as highest-priority context for the analyzers.")
+with st.sidebar:
+    st.header("Run Controls")
+    history_period = st.selectbox("History period", ["1mo", "3mo", "6mo"], index=0)
+    show_recent = st.checkbox("Show recent runs", value=True)
 
-default_system_prompt = (
-    "You are an evidence-first financial research assistant. Use the envelope and include citations. "
-    "Produce structured JSON for technical and fundamental analysis."
-)
+col1, col2 = st.columns([2,1])
 
-system_prompt = st.text_area("System prompt", value=default_system_prompt, height=160)
-symbols_input = st.text_input("Symbols (comma-separated)", value="AAPL, TSLA")
-symbols = [s.strip().upper() for s in symbols_input.split(",") if s.strip()]
-query = st.text_area("Query", value="Provide technical + fundamental analysis.")
-workflow = st.selectbox("Workflow", ["stock-analysis"])
-analyze_btn = st.button("Analyze")
+with col1:
+    st.subheader("Start Analysis")
+    ticker = st.text_input("Ticker (e.g. AAPL)", value="AAPL")
+    if st.button("Run MCP Analysis"):
+        if not ticker.strip():
+            st.error("Enter a ticker")
+        else:
+            params = {"period": history_period}
+            with st.spinner("Running local orchestration..."):
+                resp = run_analysis(ticker.strip(), params)
+            st.success("Run complete")
+            st.markdown("### Result (LLM)")
+            st.json(resp["result"].get("analysis"))
 
-st.markdown("Quick LLM test (compose) — uses Groq via server `/llm/compose`")
-compose_prompt = st.text_area("LLM prompt (for quick test)", value="Summarize Apple's latest earnings in one paragraph.")
-compose_model = st.text_input("compose model (optional)", value="openai-oss-20b")
-if st.button("Run LLM compose"):
-    headers = {"X-API-KEY": API_KEY}
-    messages = [{"role":"system","content":system_prompt},{"role":"user","content":compose_prompt}]
-    try:
-        r = requests.post(API_BASE + "/llm/compose", json={"messages": messages, "model": compose_model}, headers=headers, timeout=60)
-        st.json(r.json())
-    except Exception as e:
-        st.error(str(e))
+            st.markdown("### Full MCP Trace")
+            for i, step in enumerate(resp["trace"]):
+                label = f"Step {i+1}: {step['name']} — {step['tool']} ({step['duration']:.2f}s)"
+                with st.expander(label, expanded=(i==len(resp["trace"])-1)):
+                    st.markdown("**Input**")
+                    st.json(step.get("input"))
+                    st.markdown("**Output (truncated if large)**")
+                    out = step.get("output")
+                    try:
+                        # pretty print if dict-like
+                        st.text(json.dumps(out)[:8000])
+                    except Exception:
+                        st.write(str(out))
 
-if analyze_btn:
-    payload = {
-        "id": "ui-" + str(int(time.time() * 1000)),
-        "system_prompt": system_prompt,
-        "query": query,
-        "symbols": symbols,
-        "workflow": workflow
-    }
-    headers = {"X-API-KEY": API_KEY}
-    try:
-        r = requests.post(API_BASE + "/mcp/analyze", json=payload, headers=headers, timeout=120)
-    except Exception as e:
-        st.error(f"Request failed: {e}")
-        st.stop()
+with col2:
+    st.subheader("Audit / Past runs")
+    if show_recent:
+        runs = list_runs(limit=25)
+        for r in runs:
+            with st.expander(f"{r['run_id']} — steps {r['steps']} — last: {r['last_at']}"):
+                trace = get_trace(r["run_id"])
+                st.write(f"Trace length: {len(trace)}")
+                for s in trace:
+                    st.markdown(f"- **{s['step_index']}. {s['name']}** ({s['tool']}) — {s['duration']:.2f}s")
+                if st.button("Load JSON", key=f"load_{r['run_id']}"):
+                    st.json(trace)
 
-    if not r.ok:
-        st.error(f"Server error: {r.status_code} {r.text}")
-        st.stop()
-
-    data = r.json()
-    st.subheader("Audit")
-    st.write("audit_hash:", data.get("audit_hash"))
-    st.subheader("Step logs")
-    for s in data.get("steps", []):
-        st.markdown(f"**{s.get('step')}**")
-        st.code(json.dumps(s.get("detail"), default=str, indent=2)[:2000])
-    st.subheader("Final analysis (LangGraph/Groq fallback)")
-    st.json(data.get("langgraph"))
-    st.subheader("Final analysis (Raw)")
-    st.code(json.dumps(data.get("langgraph"), indent=2))
+st.markdown("---")
+st.markdown("**Notes:** This demo uses a local orchestrator and stores every step in `data/audit.db`. Replace `tools_registry.py` and `llm_client.py` with production connectors to fetch real data and models.")
