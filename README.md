@@ -109,32 +109,7 @@ Just the **protocol pattern**, clean and customizable.
 
 ---
 
-# 🏗 Architecture Diagram (Mermaid)
-
-```mermaid
-flowchart TD
-    A[Ticker Input] --> B(MCP Orchestrator)
-    B --> C1[quote_tool]
-    B --> C2[history_tool]
-    B --> C3[fundamentals_tool]
-
-    C1 --> D[Context Assembly]
-    C2 --> D
-    C3 --> D
-
-    D --> E(Groq LLM: gpt-oss-120b)
-    E --> F[LLM Output]
-
-    B --> G[Audit Logger (SQLite)]
-
-    F --> H[UI: Final Output]
-    G --> I[UI: MCP Trace Viewer]
-    G --> J[UI: Past Runs Panel]
-````
-
----
-
-# ✨ Features
+#  Features
 
 * Custom MCP execution pipeline
 * Groq OSS-120B integration
@@ -148,7 +123,7 @@ flowchart TD
 
 ---
 
-# 📦 Getting Started (Local)
+#  Getting Started (Local)
 
 ### 1. Clone the repo
 
@@ -177,7 +152,7 @@ streamlit run streamlit_app.py
 
 ---
 
-# 🌐 Deploy on Streamlit Cloud
+#  Deploy on Streamlit Cloud
 
 1. Push this repository to **GitHub**
 2. Go to [https://share.streamlit.io](https://share.streamlit.io) → **New App**
@@ -195,7 +170,7 @@ streamlit run streamlit_app.py
 
 ---
 
-# 🔧 Replacing Mock Tools with Real Market Data
+#  Replacing Mock Tools with Real Market Data
 
 You can switch from mock data to **yfinance** or an actual market API.
 
@@ -217,7 +192,7 @@ Add:
 
 ---
 
-# 📚 How to Extend the MCP Workflow
+#  How to Extend the MCP Workflow
 
 You can add any step:
 
@@ -233,7 +208,7 @@ Each becomes another MCP “step” in the orchestrator + audit log.
 
 ---
 
-# 🤝 Contribution
+#  Contribution
 
 PRs welcome!
 Open an issue for:
